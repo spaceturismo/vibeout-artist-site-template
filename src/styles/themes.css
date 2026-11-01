@@ -1,0 +1,31 @@
+:root {
+  --font-body: "Segoe UI", Arial, sans-serif;
+  --font-heading: "Segoe UI", Arial, sans-serif;
+}
+[data-theme="midnight"] {
+  color-scheme: dark;
+  --background: #101110;
+  --surface: #1b1d1a;
+  --text: #f4f6ef;
+  --muted: #abb0a4;
+  --line: #373b33;
+  --accent: var(--artist-accent, #c7fa73);
+  --accent-text: #101110;
+  --focus: #f4f6ef;
+  --radius: 12px;
+  --radius-button: 99px;
+}
+[data-theme="paper"] {
+  color-scheme: light;
+  --background: #f5f1e8;
+  --surface: #e9e3d8;
+  --text: #25251f;
+  --muted: #5e5e53;
+  --line: #c6c0b4;
+  --accent: #33432c;
+  --accent-text: #ffffff;
+  --focus: #33432c;
+  --radius: 2px;
+  --radius-button: 2px;
+  --font-heading: Georgia, "Times New Roman", serif;
+}

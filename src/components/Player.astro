@@ -1,0 +1,35 @@
+---
+interface Props {
+  title: string;
+  src: string;
+  kind?: 'music' | 'video';
+}
+const { title, src, kind = 'music' } = Astro.props;
+---
+<div class:list={['player', { 'player-video': kind === 'video' }]} data-player data-src={src} data-title={title}>
+  <button class="load-player" type="button">
+    <span aria-hidden="true">▶</span> Load {kind === 'video' ? 'video' : 'music'} player
+  </button>
+  <p class="player-notice">Loads third-party content only when selected.</p>
+</div>
+<script>
+  document.querySelectorAll<HTMLElement>('[data-player]').forEach((container) => {
+    container.querySelector('button')?.addEventListener('click', () => {
+      const frame = document.createElement('iframe');
+      frame.src = container.dataset.src!;
+      frame.title = container.dataset.title!;
+      frame.allow = 'encrypted-media; fullscreen; picture-in-picture';
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      frame.allowFullscreen = true;
+      frame.addEventListener('load', () => {
+        const status = container.querySelector('[role="status"]');
+        if (status) status.textContent = 'Player loaded. If unavailable, open it at the source.';
+      });
+      const status = document.createElement('p');
+      status.setAttribute('role', 'status');
+      status.className = 'player-notice';
+      status.textContent = 'Loading player... If it does not appear, open it at the source.';
+      container.replaceChildren(frame, status);
+    }, { once: true });
+  });
+</script>

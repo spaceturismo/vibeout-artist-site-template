@@ -1,0 +1,50 @@
+{
+  "artist": {
+    "name": "ArtistA",
+    "tagline": "A new frequency.",
+    "description": "Independent sound. Uncompromising expression. Welcome to the world of ArtistA.",
+    "bio": "This is ArtistA's starting canvas. Replace this sample biography with the story behind the music: where it began, what inspires it, and where it goes next.",
+    "bookingEmail": "",
+    "socialLinks": []
+  },
+  "appearance": {
+    "theme": "midnight",
+    "accent": "#c7fa73",
+    "heroImage": "images/hero.svg"
+  },
+  "sections": ["music", "videos", "about"],
+  "releases": [
+    {
+      "id": "first-light",
+      "title": "First Light",
+      "label": "Sample release / replace in editor",
+      "date": "2026-11-01",
+      "artwork": "images/first-light.svg",
+      "featured": true,
+      "published": true,
+      "source": { "provider": "none", "url": "" },
+      "streamingLinks": []
+    },
+    {
+      "id": "after-hours",
+      "title": "After Hours",
+      "label": "Sample release / replace in editor",
+      "date": "2026-10-01",
+      "artwork": "images/after-hours.svg",
+      "featured": false,
+      "published": true,
+      "source": { "provider": "none", "url": "" },
+      "streamingLinks": []
+    }
+  ],
+  "videos": [
+    {
+      "id": "player-demo",
+      "title": "Player demo - not an ArtistA release",
+      "description": "Big Buck Bunny, by the Blender Foundation. A sample YouTube embed to demonstrate the player; replace with ArtistA's video.",
+      "url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+      "thumbnail": "images/hero.svg",
+      "published": true
+    }
+  ]
+}

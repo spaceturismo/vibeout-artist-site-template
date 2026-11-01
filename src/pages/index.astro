@@ -1,0 +1,114 @@
+---
+import { site } from '../lib/site';
+import { assetUrl, musicEmbed, youtubeEmbed } from '../lib/content';
+import Player from '../components/Player.astro';
+import '../styles/global.css';
+
+const { artist, appearance } = site;
+const asset = (path: string) => assetUrl(path, import.meta.env.BASE_URL);
+const releases = site.releases.filter((release) => release.published);
+const videos = site.videos.filter((video) => video.published);
+const featured = releases.find((release) => release.featured);
+const sectionLabels = { music: 'Music', videos: 'Videos', about: 'About' };
+const sections = site.sections.filter((section) =>
+  section === 'music' ? releases.length > 0 : section === 'videos' ? videos.length > 0 : true);
+---
+<!doctype html>
+<html lang="en" data-theme={appearance.theme} style={`--artist-accent: ${appearance.accent};`}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={artist.description} />
+    <meta name="theme-color" content={appearance.theme === 'midnight' ? '#101110' : '#f5f1e8'} />
+    <meta property="og:title" content={`${artist.name} - ${artist.tagline}`} />
+    <meta property="og:description" content={artist.description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content={new URL(asset(appearance.heroImage), Astro.site ?? Astro.url).href} />
+    <link rel="canonical" href={new URL(import.meta.env.BASE_URL, Astro.site ?? Astro.url)} />
+    <title>{artist.name} - {artist.tagline}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header wrap">
+      <a class="wordmark" href={import.meta.env.BASE_URL} aria-label={`${artist.name} home`}>{artist.name}<span aria-hidden="true">.</span></a>
+      <nav aria-label="Main navigation">
+        {sections.map((section) => <a href={`#${section}`}>{sectionLabels[section]}</a>)}
+      </nav>
+      <button class="theme-toggle" type="button" aria-label="Switch to alternate theme" hidden>Switch theme</button>
+    </header>
+    <main id="main">
+      <section class="hero wrap" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> Independent artist / official site</p>
+          <h1 id="hero-title">{artist.tagline}</h1>
+          <p class="hero-description">{artist.description}</p>
+          <div class="actions">
+            {sections.includes('music') && <a class="button primary" href="#music">Explore the music <span aria-hidden="true">↗</span></a>}
+            {sections.includes('videos') && <a class="button secondary" href="#videos">Watch videos</a>}
+          </div>
+          {featured && sections.includes('music') && <div class="featured-note">
+            <img src={asset(featured.artwork)} width="54" height="54" alt="" />
+            <div><span class="eyebrow">In the spotlight</span><br /><a href={`#release-${featured.id}`}>{featured.title}</a></div>
+          </div>}
+        </div>
+        <div class="hero-visual">
+          <img src={asset(appearance.heroImage)} alt="" width="800" height="900" fetchpriority="high" />
+          <div class="visual-caption"><span>Sound without limits</span><span aria-hidden="true">01 / {artist.name}</span></div>
+        </div>
+      </section>
+      <div class="ticker" aria-hidden="true"><span>{artist.name} / MUSIC / MOTION / EXPRESSION / {artist.name} / MUSIC / MOTION / EXPRESSION</span></div>
+      {sections.map((section) => section === 'music' ? (
+        <section class="section wrap" id="music" aria-labelledby="music-title">
+          <div class="section-heading"><div><p class="eyebrow">The discography</p><h2 id="music-title">Find your frequency.</h2></div><span class="section-index">01 / MUSIC</span></div>
+          <div class="release-grid">
+            {releases.map((release) => {
+              const embed = musicEmbed(release.source);
+              return <article class="release-card" id={`release-${release.id}`}>
+                <div class="artwork"><img src={asset(release.artwork)} alt={`${release.title} cover artwork`} width="600" height="600" loading="lazy" />{release.featured && <span class="badge">Featured</span>}</div>
+                <div class="release-meta"><h3>{release.title}</h3><time datetime={release.date}>{release.date.slice(0, 4)}</time></div>
+                <p class="muted">{release.label}</p>
+                {embed && <Player title={`${release.title} music player`} src={embed} />}
+                {release.source.provider === 'audio' && <audio controls preload="none" aria-label={`${release.title} audio`} src={release.source.url}>Your browser cannot play this audio. Use the source link below.</audio>}
+                {release.source.provider !== 'none' && <a class="source-link" href={release.source.url} target="_blank" rel="noopener noreferrer">Open at source <span aria-hidden="true">↗</span></a>}
+                {!embed && release.source.provider === 'none' && <p class="empty-note">Sample artwork and title. Add a music source in the editor to listen.</p>}
+                {release.streamingLinks.length > 0 && <div class="streaming-links">{release.streamingLinks.map((link) => <a href={link.url} target="_blank" rel="noopener noreferrer">{link.label} <span aria-hidden="true">↗</span></a>)}</div>}
+              </article>;
+            })}
+          </div>
+        </section>
+      ) : section === 'videos' ? (
+        <section class="section wrap" id="videos" aria-labelledby="videos-title">
+          <div class="section-heading"><div><p class="eyebrow">Beyond the sound</p><h2 id="videos-title">See the vision.</h2></div><span class="section-index">02 / VIDEOS</span></div>
+          <div class="video-grid">{videos.map((video) => <article class="video-card">
+            <div class="video-image"><img src={asset(video.thumbnail)} alt="" width="800" height="450" loading="lazy" /><span class="badge">YouTube</span></div>
+            <h3>{video.title}</h3><p class="muted">{video.description}</p>
+            <Player title={video.title} src={youtubeEmbed(video.url)!} kind="video" />
+            <a class="source-link" href={video.url} target="_blank" rel="noopener noreferrer">Watch on YouTube <span aria-hidden="true">↗</span></a>
+          </article>)}</div>
+        </section>
+      ) : (
+        <section class="section about-section wrap" id="about" aria-labelledby="about-title">
+          <div><p class="eyebrow">Behind the artist</p><h2 id="about-title">Always<br />in motion.</h2></div>
+          <div class="about-copy"><h3>{artist.name}</h3><p>{artist.bio}</p>
+            {artist.bookingEmail && <a class="button secondary" href={`mailto:${artist.bookingEmail}`}>Booking &amp; collaboration <span aria-hidden="true">↗</span></a>}
+            {artist.socialLinks.length > 0 && <div class="streaming-links">{artist.socialLinks.map((link) => <a href={link.url} target="_blank" rel="noopener noreferrer">{link.label} <span aria-hidden="true">↗</span></a>)}</div>}
+          </div>
+        </section>
+      ))}
+    </main>
+    <footer class="site-footer wrap"><a class="wordmark" href={import.meta.env.BASE_URL}>{artist.name}<span>.</span></a><p>Independent sound. Your own world.</p><a href={assetUrl('admin/', import.meta.env.BASE_URL)}>Site editor</a></footer>
+    <script>
+      const button = document.querySelector<HTMLButtonElement>('.theme-toggle');
+      if (button) {
+        button.hidden = false;
+        button.addEventListener('click', () => {
+          document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'midnight' ? 'paper' : 'midnight';
+          const theme = document.documentElement.dataset.theme;
+          document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'midnight' ? '#101110' : '#f5f1e8');
+          button.textContent = theme === 'midnight' ? 'Light theme' : 'Dark theme';
+        });
+        button.textContent = document.documentElement.dataset.theme === 'midnight' ? 'Light theme' : 'Dark theme';
+      }
+    </script>
+  </body>
+</html>

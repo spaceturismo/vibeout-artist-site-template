@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="900" viewBox="0 0 800 900">
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#19251b"/><stop offset="1" stop-color="#070b08"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#c7fa73" stop-opacity=".6"/><stop offset="1" stop-color="#c7fa73" stop-opacity="0"/></radialGradient>
+    <linearGradient id="ring" x2="1" y2="1"><stop stop-color="#d7ffa4"/><stop offset=".45" stop-color="#617b3b"/><stop offset="1" stop-color="#b6df78"/></linearGradient>
+  </defs>
+  <path fill="url(#bg)" d="M0 0h800v900H0z"/>
+  <circle cx="430" cy="420" r="380" fill="url(#glow)"/>
+  <g transform="translate(400 430) rotate(-28)" fill="none" stroke="url(#ring)">
+    <ellipse rx="260" ry="320" stroke-width="2"/>
+    <ellipse rx="228" ry="288" stroke-width="5"/>
+    <ellipse rx="196" ry="256" stroke-width="10"/>
+    <ellipse rx="164" ry="224" stroke-width="18"/>
+    <ellipse rx="132" ry="192" stroke-width="27"/>
+    <ellipse rx="100" ry="160" stroke-width="38"/>
+    <ellipse rx="67" ry="127" stroke-width="40"/>
+  </g>
+  <path d="M70 80h50M95 55v50M680 790h50M705 765v50" stroke="#c7fa73" stroke-opacity=".5"/>
+  <text x="65" y="840" fill="#d7e8c2" font-family="Arial,sans-serif" font-size="12" letter-spacing="6">VIBEOUT / ORIGINAL SAMPLE ART</text>
+</svg>

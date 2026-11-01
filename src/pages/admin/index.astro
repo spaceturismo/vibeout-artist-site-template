@@ -1,0 +1,72 @@
+---
+import { cmsSettings } from '../../lib/cms';
+import { assetUrl } from '../../lib/content';
+import { site } from '../../lib/site';
+import '../../styles/global.css';
+const settings = cmsSettings(import.meta.env.PUBLIC_GITHUB_REPOSITORY, import.meta.env.PUBLIC_CMS_AUTH_ORIGIN);
+const repository = import.meta.env.PUBLIC_GITHUB_REPOSITORY;
+const repositoryValid = repository && /^[\w.-]+\/[\w.-]+$/.test(repository);
+---
+<!doctype html>
+<html lang="en" data-theme="midnight">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>{site.artist.name} - Site editor</title>
+  </head>
+  <body>
+    <main class="admin-shell" id="editor-intro" data-config={assetUrl('admin/config.json', import.meta.env.BASE_URL)}>
+      <a href={import.meta.env.BASE_URL}>← Back to {site.artist.name}</a>
+      <p class="eyebrow">Vibeout / content studio</p>
+      <h1>Your world.<br />Your controls.</h1>
+      <p>Edit music, YouTube videos, artwork, branding, and themes. Changes are stored in GitHub and published after automated validation.</p>
+      <p><a href={assetUrl('admin/guide/', import.meta.env.BASE_URL)}>Read the administration guide: how to add real content →</a></p>
+      {settings ? <div class="admin-status">
+        <h2 style="font-size: 1.6rem;">Browser editor configured</h2>
+        <p>Sign in with a GitHub account that has write access to this repository. Publishing triggers a new deployment; changes are not instantly live.</p>
+        <button class="button primary" id="open-editor" type="button">Open content editor</button>
+        <p id="editor-status" role="status"></p>
+      </div> : <div class="admin-status">
+        <h2 style="font-size: 1.6rem;">Authentication setup required</h2>
+        <p>The static website is ready. Browser editing requires a trusted GitHub OAuth proxy hosted outside GitHub Pages.</p>
+        <p>Set the repository variable <code>PUBLIC_CMS_AUTH_ORIGIN</code> to its HTTPS origin, then redeploy. See the repository README for the authentication contract and setup steps.</p>
+        {repositoryValid && <a class="button secondary" href={`https://github.com/${repository}/edit/main/src/content/site.json`} target="_blank" rel="noopener noreferrer">Edit content in GitHub <span aria-hidden="true">↗</span></a>}
+        <p>You can edit the JSON file in GitHub now. Automated checks reject invalid content and keep the last successful site live.</p>
+      </div>}
+    </main>
+    <script>
+      interface CmsApi { init(options: { config: object }): void }
+      declare global {
+        interface Window { CMS_MANUAL_INIT: boolean; CMS?: CmsApi }
+      }
+      const button = document.querySelector<HTMLButtonElement>('#open-editor');
+      const status = document.querySelector<HTMLElement>('#editor-status');
+      button?.addEventListener('click', async () => {
+        button.disabled = true;
+        if (status) status.textContent = 'Loading content editor...';
+        try {
+          const path = document.querySelector<HTMLElement>('#editor-intro')!.dataset.config!;
+          const response = await fetch(path);
+          if (!response.ok) throw new Error(`Configuration request failed (${response.status}).`);
+          const config: object = await response.json();
+          window.CMS_MANUAL_INIT = true;
+          await new Promise<void>((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/decap-cms@3.17.1/dist/decap-cms.js';
+            script.onload = () => resolve();
+            script.onerror = () => { script.remove(); reject(new Error('Could not load the CMS. Check your network connection and try again.')); };
+            document.head.append(script);
+          });
+          if (!window.CMS) throw new Error('The CMS did not initialize correctly.');
+          window.CMS.init({ config: { ...config, load_config_file: false } });
+          document.querySelector<HTMLElement>('#editor-intro')!.hidden = true;
+        } catch (error) {
+          if (status) status.textContent = error instanceof Error ? error.message : 'Could not open the editor.';
+          console.error('Content editor initialization failed', error);
+          button.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
