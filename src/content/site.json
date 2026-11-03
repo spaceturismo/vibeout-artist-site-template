@@ -1,9 +1,9 @@
 {
   "artist": {
-    "name": "ArtistA",
+    "name": "CODOT",
     "tagline": "A new frequency.",
-    "description": "Independent sound. Uncompromising expression. Welcome to the world of ArtistA.",
-    "bio": "This is ArtistA's starting canvas. Replace this sample biography with the story behind the music: where it began, what inspires it, and where it goes next.",
+    "description": "Independent sound. Uncompromising expression. Welcome to the world of CODOT.",
+    "bio": "This is CODOT's starting canvas. Replace this sample biography with the story behind the music: where it began, what inspires it, and where it goes next.",
     "bookingEmail": "",
     "socialLinks": []
   },
@@ -40,9 +40,9 @@
   "videos": [
     {
       "id": "player-demo",
-      "title": "Player demo - not an ArtistA release",
-      "description": "Big Buck Bunny, by the Blender Foundation. A sample YouTube embed to demonstrate the player; replace with ArtistA's video.",
-      "url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+      "title": "We Killaz. CODOT original song.",
+      "description": "We Killaz. CODOT original.",
+      "url": "https://youtu.be/HlGr0qh7UnA?si=jkHGbaMv5NzgG2pK",
       "thumbnail": "images/hero.svg",
       "published": true
     }
