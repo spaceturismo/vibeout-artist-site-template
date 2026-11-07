@@ -7,6 +7,9 @@ const site = siteSchema.parse(rawSite);
 test('artist pages, local assets, theme switch and responsive layout work', async ({ page }) => {
   await page.goto('./');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(site.artist.tagline);
+  if (site.sections.includes('about')) {
+    await expect(page.locator('.about-copy p')).toHaveText(site.artist.bio.split(/\r?\n\s*\r?\n/));
+  }
   await expect(page.locator('html')).toHaveAttribute('data-theme', site.appearance.theme);
   await page.getByRole('button', { name: 'Switch to alternate theme' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', site.appearance.theme === 'midnight' ? 'paper' : 'midnight');

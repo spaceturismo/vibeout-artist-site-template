@@ -89,7 +89,7 @@ const sections = site.sections.filter((section) =>
       ) : (
         <section class="section about-section wrap" id="about" aria-labelledby="about-title">
           <div><p class="eyebrow">Behind the artist</p><h2 id="about-title">Always<br />in motion.</h2></div>
-          <div class="about-copy"><h3>{artist.name}</h3><p>{artist.bio}</p>
+          <div class="about-copy"><h3>{artist.name}</h3>{artist.bio.split(/\r?\n\s*\r?\n/).map((paragraph) => <p>{paragraph}</p>)}
             {artist.bookingEmail && <a class="button secondary" href={`mailto:${artist.bookingEmail}`}>Booking &amp; collaboration <span aria-hidden="true">↗</span></a>}
             {artist.socialLinks.length > 0 && <div class="streaming-links">{artist.socialLinks.map((link) => <a href={link.url} target="_blank" rel="noopener noreferrer">{link.label} <span aria-hidden="true">↗</span></a>)}</div>}
           </div>

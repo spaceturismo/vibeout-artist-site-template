@@ -21,6 +21,8 @@ Both methods save content to GitHub and trigger validation and deployment. Do no
 
 Only publish music and imagery you own or have permission to use.
 
+Separate biography paragraphs with a blank line in the browser editor. When editing JSON directly, use `\n\n` inside the biography string instead of literal line breaks. Use `\"` for straight double quotes inside a JSON string; curly quotes need no backslash. Biography content is displayed as text, not HTML.
+
 ## Add music
 
 Add an entry under **Music releases**. Give it a unique lowercase ID such as `debut-single`, a title, subtitle, date, and cover image.
