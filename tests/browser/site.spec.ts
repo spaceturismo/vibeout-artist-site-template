@@ -6,6 +6,64 @@ const site = siteSchema.parse(rawSite);
 const hasPlaylist = site.sections.includes('videos') && site.videos.some((video) =>
   video.published && youtubeEmbed(video.url)?.includes('/videoseries'));
 
+test.beforeEach(async ({ page }) => {
+  if (site.artist.bioSourceUrl) await page.route(site.artist.bioSourceUrl, (route) => route.abort());
+});
+
+test('live bio uses plain text and refreshes only after its two-minute cache expires', async ({ page }) => {
+  test.skip(!site.artist.bioSourceUrl || !site.sections.includes('about'), 'No live bio configured.');
+  await page.clock.install({ time: new Date('2026-11-15T00:00:00Z') });
+  await page.clock.pauseAt(new Date('2026-11-15T00:00:00Z'));
+  let requests = 0;
+  let text = 'Live biography from Drive.\n\n<script>window.bioInjected = true</script>';
+  await page.route(site.artist.bioSourceUrl, (route) => {
+    requests++;
+    return route.fulfill({ contentType: 'text/plain; charset=utf-8', body: text });
+  });
+  await page.goto('./');
+  await expect(page.locator('.bio-text p')).toHaveText(['Live biography from Drive.', '<script>window.bioInjected = true</script>']);
+  await expect(page.locator('.bio-text script')).toHaveCount(0);
+  expect(await page.evaluate('window.bioInjected')).toBeUndefined();
+  expect(requests).toBe(1);
+  await page.clock.fastForward(119000);
+  text = 'Updated biography from Drive.';
+  await page.reload();
+  await expect(page.locator('.bio-text p').first()).toHaveText('Live biography from Drive.');
+  expect(requests).toBe(1);
+  await page.clock.fastForward(1000);
+  await page.reload();
+  await expect(page.locator('.bio-text p')).toHaveText(['Updated biography from Drive.']);
+  expect(requests).toBe(2);
+});
+
+test('live bio preserves local fallback for invalid responses and works without storage', async ({ page }) => {
+  test.skip(!site.artist.bioSourceUrl || !site.sections.includes('about'), 'No live bio configured.');
+  for (const response of [
+    { status: 403, contentType: 'text/plain', body: 'Access denied' },
+    { status: 200, contentType: 'text/html', body: '<p>Sign in to Google</p>' },
+    { status: 200, contentType: 'text/plain', body: '   ' },
+  ]) {
+    await page.route(site.artist.bioSourceUrl, (route) => route.fulfill(response));
+    await page.goto('./');
+    await expect(page.locator('.bio-text p')).toHaveText(site.artist.bio.split(/\r?\n\s*\r?\n/));
+  }
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'localStorage', { get() { throw new Error('Storage blocked'); } });
+  });
+  await page.route(site.artist.bioSourceUrl, (route) => route.fulfill({ contentType: 'text/plain', body: 'Live bio without browser storage.' }));
+  await page.reload();
+  await expect(page.locator('.bio-text p')).toHaveText(['Live bio without browser storage.']);
+});
+
+test('live bio keeps a stale cached copy when the remote document is unavailable', async ({ page }) => {
+  test.skip(!site.artist.bioSourceUrl || !site.sections.includes('about'), 'No live bio configured.');
+  await page.addInitScript((source) => {
+    localStorage.setItem(`artist-bio:${source}`, JSON.stringify({ text: 'Last known biography.', savedAt: Date.now() - 121000 }));
+  }, site.artist.bioSourceUrl);
+  await page.goto('./');
+  await expect(page.locator('.bio-text p')).toHaveText(['Last known biography.']);
+});
+
 async function mockPlaylist(page: Page, ids = ['HlGr0qh7UnA', 'M7lc1UVf-VE', 'bHQqvYy5KYo', 'dQw4w9WgXcQ', 'aqz-KE-bpKQ']) {
   await page.route('https://www.youtube-nocookie.com/**', (route) => route.fulfill({
     contentType: 'text/html', body: '<html><body>Mock video player</body></html>',

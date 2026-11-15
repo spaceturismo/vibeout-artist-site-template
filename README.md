@@ -40,6 +40,14 @@ Use the same `BASE_PATH` environment value for build and browser checks. Checks 
 
 All artist-specific content is in one JSON file. Shared components and CSS are not copied per artist. Each independent site has its own repository, deployment, and editor permissions.
 
+## Live biography
+
+Set the optional `artist.bioSourceUrl` to a public HTTPS plain-text URL that allows browser cross-origin requests. A publicly shared Google Doc can use `https://docs.google.com/document/d/DOCUMENT_ID/export?format=txt`; anonymous access and CORS must work for the specific document. This is not the document's edit URL.
+
+The bio loads directly in the visitor's browser, with no backend, authentication, scheduled sync, or rebuild for document edits. Successful text is cached in browser storage for two minutes. On a subsequent page load after expiry, the site checks the source again; an already-open page does not poll. Google and HTTP caches may also delay changes. Paragraphs use the site's styling, and source content is rendered as text, never executable HTML.
+
+Keep `artist.bio` as the fallback for first visits, disabled JavaScript, or unavailable sources. A previously cached bio remains visible while refreshing, including when a refresh fails. If browser storage is blocked, fetching still works. Clear `bioSourceUrl` to use only the local biography. Keep the document publicly readable; making it private will prevent future downloads but does not erase text already cached by visitors.
+
 ## Music and video content
 
 For a release's `source`, select a provider and paste a public share URL:

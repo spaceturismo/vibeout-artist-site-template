@@ -89,7 +89,8 @@ const sections = site.sections.filter((section) =>
       ) : (
         <section class="section about-section wrap" id="about" aria-labelledby="about-title">
           <div><p class="eyebrow">Behind the artist</p><h2 id="about-title">Always<br />in motion.</h2></div>
-          <div class="about-copy"><h3>{artist.name}</h3>{artist.bio.split(/\r?\n\s*\r?\n/).map((paragraph) => <p>{paragraph}</p>)}
+          <div class="about-copy"><h3>{artist.name}</h3>
+            <div class="bio-text" data-bio-source={artist.bioSourceUrl || undefined}>{artist.bio.split(/\r?\n\s*\r?\n/).map((paragraph) => <p>{paragraph}</p>)}</div>
             {artist.bookingEmail && <a class="button secondary" href={`mailto:${artist.bookingEmail}`}>Booking &amp; collaboration <span aria-hidden="true">↗</span></a>}
             {artist.socialLinks.length > 0 && <div class="streaming-links">{artist.socialLinks.map((link) => <a href={link.url} target="_blank" rel="noopener noreferrer">{link.label} <span aria-hidden="true">↗</span></a>)}</div>}
           </div>
@@ -98,6 +99,36 @@ const sections = site.sections.filter((section) =>
     </main>
     <footer class="site-footer wrap"><a class="wordmark" href={import.meta.env.BASE_URL}>{artist.name}<span>.</span></a><p>Independent sound. Your own world.</p><a href={assetUrl('admin/', import.meta.env.BASE_URL)}>Site editor</a></footer>
     <script>
+      document.querySelectorAll<HTMLElement>('[data-bio-source]').forEach(async (container) => {
+        const source = container.dataset.bioSource!;
+        const cacheKey = `artist-bio:${source}`;
+        const cacheDuration = 2 * 60 * 1000;
+        const validText = (text: unknown): text is string => typeof text === 'string' && text.trim().length > 0 && text.length <= 50000;
+        const renderBio = (text: string) => {
+          const paragraphs = text.replace(/^\uFEFF/, '').trim().split(/\r?\n\s*\r?\n/);
+          container.replaceChildren(...paragraphs.map((text) => {
+            const paragraph = document.createElement('p');
+            paragraph.textContent = text;
+            return paragraph;
+          }));
+        };
+        try {
+          const cached = JSON.parse(localStorage.getItem(cacheKey) ?? 'null');
+          if (cached && validText(cached.text) && typeof cached.savedAt === 'number' && Number.isFinite(cached.savedAt) && cached.savedAt > 0 && cached.savedAt <= Date.now()) {
+            renderBio(cached.text);
+            if (Date.now() - cached.savedAt < cacheDuration) return;
+          }
+        } catch {}
+        try {
+          const response = await fetch(source, { credentials: 'omit', signal: AbortSignal.timeout(8000) });
+          if (!response.ok || !response.headers.get('content-type')?.toLowerCase().startsWith('text/plain')) return;
+          const text = await response.text();
+          if (!validText(text)) return;
+          renderBio(text);
+          try { localStorage.setItem(cacheKey, JSON.stringify({ text, savedAt: Date.now() })); } catch {}
+        } catch {}
+      });
+
       const button = document.querySelector<HTMLButtonElement>('.theme-toggle');
       if (button) {
         button.hidden = false;

@@ -79,6 +79,7 @@ export const siteSchema = z.object({
     tagline: z.string().min(1),
     description: z.string().min(1),
     bio: z.string().min(1),
+    bioSourceUrl: z.union([z.literal(''), safeUrl]).default(''),
     bookingEmail: z.union([z.literal(''), z.email()]).default(''),
     socialLinks: z.array(link).default([]),
   }),

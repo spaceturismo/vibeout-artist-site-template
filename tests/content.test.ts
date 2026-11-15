@@ -60,6 +60,16 @@ test('source validation rejects mismatched providers and supports externally hos
   assert.equal(sourceSchema.safeParse({ provider: 'none', url: 'https://example.com' }).success, false);
 });
 
+test('optional remote bio sources require public HTTPS URLs without credentials', () => {
+  assert.equal(siteSchema.parse(raw).artist.bioSourceUrl, '');
+  const withBio = (bioSourceUrl: string) => ({ ...raw, artist: { ...raw.artist, bioSourceUrl } });
+  assert.equal(siteSchema.safeParse(withBio('https://docs.google.com/document/d/example/export?format=txt')).success, true);
+  assert.equal(siteSchema.safeParse(withBio('')).success, true);
+  for (const url of ['http://example.com/bio.txt', 'javascript:alert(1)', 'https://user:password@example.com/bio.txt']) {
+    assert.equal(siteSchema.safeParse(withBio(url)).success, false);
+  }
+});
+
 test('template supports different branding, alternate theme, reordered and hidden sections', () => {
   const secondArtist = structuredClone(raw);
   secondArtist.artist.name = 'A much longer second artist name';
