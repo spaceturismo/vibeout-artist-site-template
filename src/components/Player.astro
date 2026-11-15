@@ -1,35 +1,187 @@
 ---
+import { ChevronLeft, ChevronRight } from '@lucide/astro';
 interface Props {
   title: string;
   src: string;
   kind?: 'music' | 'video';
 }
 const { title, src, kind = 'music' } = Astro.props;
+const playlist = kind === 'video' && new URL(src).pathname === '/embed/videoseries';
 ---
-<div class:list={['player', { 'player-video': kind === 'video' }]} data-player data-src={src} data-title={title}>
-  <button class="load-player" type="button">
-    <span aria-hidden="true">▶</span> Load {kind === 'video' ? 'video' : 'music'} player
-  </button>
+<div class:list={['player', { 'player-video': kind === 'video', 'playlist-player': playlist }]} data-player data-src={src} data-title={title}>
+  <div class="player-stage">
+    <button class="load-player" type="button">
+      <span aria-hidden="true">▶</span> Load {kind === 'video' ? 'video' : 'music'} player
+    </button>
+  </div>
+  {playlist && <div class="playlist-selector" hidden>
+    <div class="playlist-toolbar">
+      <span class="playlist-position" aria-live="polite"></span>
+      <div class="playlist-arrows">
+        <button type="button" data-previous aria-label="Previous playlist video" title="Previous playlist video" disabled><ChevronLeft size={20} aria-hidden="true" /></button>
+        <button type="button" data-next aria-label="Next playlist video" title="Next playlist video" disabled><ChevronRight size={20} aria-hidden="true" /></button>
+      </div>
+    </div>
+    <div class="playlist-strip" role="region" aria-label="Playlist videos"></div>
+  </div>}
   <p class="player-notice">Loads third-party content only when selected.</p>
 </div>
 <script>
+  interface PlaylistPlayer {
+    getPlaylist(): string[] | undefined;
+    getPlaylistIndex(): number;
+    playVideoAt(index: number): void;
+    cuePlaylist(options: { listType: string; list: string }): void;
+  }
+  interface PlayerEvent { target: PlaylistPlayer; data?: number }
+  interface YouTubeAPI {
+    Player: new (frame: HTMLIFrameElement, options: { events: {
+      onReady: (event: PlayerEvent) => void;
+      onStateChange: (event: PlayerEvent) => void;
+      onError: (event: PlayerEvent) => void;
+    } }) => PlaylistPlayer;
+  }
+  const youtubeWindow = window as Window & { YT?: YouTubeAPI; onYouTubeIframeAPIReady?: () => void };
+  let apiPromise: Promise<YouTubeAPI> | undefined;
+  function loadYouTubeAPI(): Promise<YouTubeAPI> {
+    if (youtubeWindow.YT?.Player) return Promise.resolve(youtubeWindow.YT);
+    if (apiPromise) return apiPromise;
+    apiPromise = new Promise((resolve, reject) => {
+      const timeout = window.setTimeout(() => reject(new Error('YouTube API timed out')), 15000);
+      const previousReady = youtubeWindow.onYouTubeIframeAPIReady;
+      youtubeWindow.onYouTubeIframeAPIReady = () => {
+        window.clearTimeout(timeout);
+        previousReady?.();
+        if (youtubeWindow.YT) resolve(youtubeWindow.YT);
+        else reject(new Error('YouTube API unavailable'));
+      };
+      const script = document.createElement('script');
+      script.src = 'https://www.youtube.com/iframe_api';
+      script.onerror = () => {
+        window.clearTimeout(timeout);
+        reject(new Error('YouTube API unavailable'));
+      };
+      document.head.append(script);
+    });
+    return apiPromise;
+  }
+
   document.querySelectorAll<HTMLElement>('[data-player]').forEach((container) => {
-    container.querySelector('button')?.addEventListener('click', () => {
+    container.querySelector('.load-player')?.addEventListener('click', async () => {
+      const stage = container.querySelector<HTMLElement>('.player-stage')!;
+      const status = container.querySelector<HTMLElement>('.player-notice')!;
+      status.setAttribute('role', 'status');
+      status.textContent = 'Loading player... If it does not appear, open it at the source.';
+      const embed = new URL(container.dataset.src!);
+      const playlistId = embed.pathname === '/embed/videoseries' ? embed.searchParams.get('list') : null;
+      if (playlistId) {
+        embed.searchParams.set('enablejsapi', '1');
+        embed.searchParams.set('origin', window.location.origin);
+        embed.searchParams.set('playsinline', '1');
+      }
       const frame = document.createElement('iframe');
-      frame.src = container.dataset.src!;
+      frame.src = embed.href;
       frame.title = container.dataset.title!;
       frame.allow = 'encrypted-media; fullscreen; picture-in-picture';
       frame.referrerPolicy = 'strict-origin-when-cross-origin';
       frame.allowFullscreen = true;
       frame.addEventListener('load', () => {
-        const status = container.querySelector('[role="status"]');
-        if (status) status.textContent = 'Player loaded. If unavailable, open it at the source.';
+        if (!playlistId) status.textContent = 'Player loaded. If unavailable, open it at the source.';
       });
-      const status = document.createElement('p');
-      status.setAttribute('role', 'status');
-      status.className = 'player-notice';
-      status.textContent = 'Loading player... If it does not appear, open it at the source.';
-      container.replaceChildren(frame, status);
+      stage.replaceChildren(frame);
+      if (!playlistId) return;
+
+      const selector = container.querySelector<HTMLElement>('.playlist-selector')!;
+      const strip = container.querySelector<HTMLElement>('.playlist-strip')!;
+      const position = container.querySelector<HTMLElement>('.playlist-position')!;
+      const previous = container.querySelector<HTMLButtonElement>('[data-previous]')!;
+      const next = container.querySelector<HTMLButtonElement>('[data-next]')!;
+      let player: PlaylistPlayer;
+      let signature = '';
+      let retryTimer: number | undefined;
+      let readyTimeout: number | undefined;
+      let retries = 0;
+      const selectVideo = (index: number) => player.playVideoAt(index);
+      const refreshPlaylist = (event: PlayerEvent): boolean => {
+        player = event.target;
+        const ids = player.getPlaylist() ?? [];
+        if (!ids.length) return false;
+        if (signature !== JSON.stringify(ids)) {
+          signature = JSON.stringify(ids);
+          strip.replaceChildren(...ids.map((id, index) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'playlist-item';
+            button.setAttribute('aria-label', `Play playlist video ${index + 1}`);
+            const label = document.createElement('span');
+            label.textContent = `Video ${index + 1}`;
+            if (/^[A-Za-z0-9_-]{11}$/.test(id)) {
+              const image = document.createElement('img');
+              image.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+              image.alt = '';
+              image.width = 320;
+              image.height = 180;
+              image.loading = 'lazy';
+              image.onerror = () => { image.hidden = true; };
+              button.append(image);
+            }
+            button.append(label);
+            button.addEventListener('click', () => selectVideo(index));
+            return button;
+          }));
+        }
+        const selected = player.getPlaylistIndex();
+        const buttons = strip.querySelectorAll<HTMLButtonElement>('.playlist-item');
+        buttons.forEach((button, index) => button.setAttribute('aria-pressed', String(index === selected)));
+        previous.disabled = selected <= 0;
+        next.disabled = selected < 0 || selected >= ids.length - 1;
+        position.textContent = selected >= 0 ? `${selected + 1} / ${ids.length}` : `${ids.length} videos`;
+        selector.hidden = false;
+        const active = buttons[selected];
+        if (active && (active.offsetLeft < strip.scrollLeft || active.offsetLeft + active.offsetWidth > strip.scrollLeft + strip.clientWidth)) {
+          strip.scrollTo({ left: Math.max(0, active.offsetLeft - strip.clientWidth / 2 + active.offsetWidth / 2), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+        }
+        if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+        return true;
+      };
+      previous.addEventListener('click', () => selectVideo(player.getPlaylistIndex() - 1));
+      next.addEventListener('click', () => selectVideo(player.getPlaylistIndex() + 1));
+      try {
+        const api = await loadYouTubeAPI();
+        readyTimeout = window.setTimeout(() => {
+          status.textContent = 'YouTube did not respond. Open the playlist on YouTube to watch.';
+        }, 15000);
+        new api.Player(frame, { events: {
+          onReady: (event) => {
+            window.clearTimeout(readyTimeout);
+            player = event.target;
+            status.textContent = 'Loading playlist videos...';
+            const checkPlaylist = () => {
+              if (refreshPlaylist(event)) { status.textContent = ''; return; }
+              if (++retries >= 40) {
+                status.textContent = 'No playlist videos are available. Check the playlist on YouTube.';
+                return;
+              }
+              retryTimer = window.setTimeout(checkPlaylist, 300);
+            };
+            if (!(player.getPlaylist()?.length)) player.cuePlaylist({ listType: 'playlist', list: playlistId });
+            checkPlaylist();
+          },
+          onStateChange: (event) => {
+            if (refreshPlaylist(event) && [1, 2, 5].includes(event.data ?? -1)) status.textContent = '';
+          },
+          onError: (event) => {
+            window.clearTimeout(readyTimeout);
+            if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+            refreshPlaylist(event);
+            status.textContent = event.data === 100 ? 'This video is private or unavailable. Choose another video or open YouTube.'
+              : event.data === 101 || event.data === 150 ? 'This video cannot be embedded. Open it on YouTube.'
+              : 'YouTube could not load this video. Open the playlist on YouTube.';
+          },
+        } });
+      } catch {
+        status.textContent = 'Playlist controls could not load. Use the YouTube player or open the playlist on YouTube.';
+      }
     }, { once: true });
   });
 </script>
