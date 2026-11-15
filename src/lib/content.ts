@@ -34,6 +34,11 @@ export function youtubeEmbed(value: string): string | null {
     let id: string | null = null;
     if (url.hostname === 'youtu.be') id = url.pathname.slice(1);
     if (['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(url.hostname)) {
+      if (['/playlist', '/embed/videoseries'].includes(url.pathname)) {
+        const playlist = url.searchParams.get('list');
+        return playlist && /^[A-Za-z0-9_-]+$/.test(playlist)
+          ? `https://www.youtube-nocookie.com/embed/videoseries?list=${playlist}` : null;
+      }
       id = url.pathname === '/watch' ? url.searchParams.get('v')
         : /^\/(?:embed|shorts)\/([^/]+)$/.exec(url.pathname)?.[1] ?? null;
     }
@@ -103,7 +108,7 @@ export const siteSchema = z.object({
     id: z.string().regex(/^[a-z0-9-]+$/),
     title: z.string().min(1),
     description: z.string().default(''),
-    url: safeUrl.refine((value) => youtubeEmbed(value) !== null, 'Use a supported YouTube video URL.'),
+    url: safeUrl.refine((value) => youtubeEmbed(value) !== null, 'Use a supported YouTube video or playlist URL.'),
     thumbnail: asset,
     published: z.boolean(),
   })).default([]),

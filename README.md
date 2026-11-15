@@ -52,7 +52,7 @@ For a release's `source`, select a provider and paste a public share URL:
 | `soundcloud` | Public `soundcloud.com` track or playlist URL |
 | `audio` | Direct HTTPS audio file hosted on your media storage |
 
-`streamingLinks` can include additional HTTPS destinations. Videos accept YouTube watch, short-link, Shorts, and embed URLs. Paste URLs, not HTML. Players load only after user interaction, never autoplay, and include source links when embedding is blocked or unavailable. Providers may impose region, login, privacy, or embedding restrictions.
+`streamingLinks` can include additional HTTPS destinations. Videos accept YouTube watch, short-link, Shorts, embed, and playlist URLs. Playlist embeds load the current playlist directly from YouTube, so changing its videos or order does not require a site rebuild. Keep the playlist public or unlisted and its videos embeddable. Paste URLs, not HTML. Players load only after user interaction, never autoplay, and include source links when embedding is blocked or unavailable. Providers may impose region, login, privacy, or embedding restrictions.
 
 Images live under `public/images`; content paths use `images/...`, not root-relative `/images/...`. This keeps images portable between GitHub Pages subpaths and custom domains. Use compressed JPEG/WebP for real photography. Large audio/video uploads are intentionally not stored in Git; use external media hosting. The image editor uploads to `public/images/uploads`.
 

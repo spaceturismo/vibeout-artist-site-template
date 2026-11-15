@@ -25,6 +25,24 @@ test('YouTube URLs normalize to privacy-enhanced embeds without autoplay', () =>
   }
 });
 
+test('YouTube playlists normalize to live privacy-enhanced embeds', () => {
+  for (const url of [
+    'https://www.youtube.com/playlist?list=PLJjJEgRG4NCo',
+    'https://youtube.com/playlist?list=PLJjJEgRG4NCo&autoplay=1',
+    'https://m.youtube.com/embed/videoseries?list=PLJjJEgRG4NCo',
+  ]) assert.equal(youtubeEmbed(url), 'https://www.youtube-nocookie.com/embed/videoseries?list=PLJjJEgRG4NCo');
+  for (const url of [
+    'https://www.youtube.com/playlist',
+    'https://www.youtube.com/playlist?list=',
+    'https://www.youtube.com/playlist?list=invalid%26autoplay%3D1',
+    'https://youtube.com.evil.test/playlist?list=PLJjJEgRG4NCo',
+    'http://www.youtube.com/playlist?list=PLJjJEgRG4NCo',
+  ]) assert.equal(youtubeEmbed(url), null);
+  const site = structuredClone(raw);
+  site.videos[0].url = 'https://www.youtube.com/playlist?list=PLJjJEgRG4NCo';
+  assert.equal(siteSchema.safeParse(site).success, true);
+});
+
 test('music providers build allowlisted embeds and preserve Apple track selection', () => {
   assert.equal(musicEmbed({ provider: 'spotify', url: 'https://open.spotify.com/album/abc123?si=tracking' }), 'https://open.spotify.com/embed/album/abc123');
   assert.equal(musicEmbed({ provider: 'apple', url: 'https://music.apple.com/us/album/example/123?i=456' }), 'https://embed.music.apple.com/us/album/example/123?i=456');

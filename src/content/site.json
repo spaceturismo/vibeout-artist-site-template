@@ -40,9 +40,9 @@
   "videos": [
     {
       "id": "player-demo",
-      "title": "We Killaz. CODOT original song.",
-      "description": "We Killaz. CODOT original.",
-      "url": "https://youtu.be/HlGr0qh7UnA?si=jkHGbaMv5NzgG2pK",
+      "title": "CODOT playlist",
+      "description": "",
+      "url": "https://www.youtube.com/playlist?list=PLJjJEgRG4NCo",
       "thumbnail": "images/hero.svg",
       "published": true
     }

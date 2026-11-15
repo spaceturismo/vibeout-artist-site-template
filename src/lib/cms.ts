@@ -88,7 +88,7 @@ export function cmsConfig(settings: NonNullable<ReturnType<typeof cmsSettings>>,
             ],
           },
           {
-            name: 'videos', label: 'YouTube videos', widget: 'list', required: false, summary: '{{fields.title}}',
+            name: 'videos', label: 'YouTube videos and playlists', widget: 'list', required: false, summary: '{{fields.title}}',
             fields: [
               { ...text('id', 'Unique ID'), pattern: ['^[a-z0-9-]+$', 'Use lowercase letters, numbers and hyphens.'] },
               text('title', 'Title'),
